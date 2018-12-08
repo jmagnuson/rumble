@@ -461,11 +461,16 @@ impl Adapter {
     }
 
     pub fn from_dev_id(ctl: i32, dev_id: u16) -> Result<Adapter> {
+        #[cfg(any(target_env = "musl", target_os = "android"))]
+        use libc::c_int as _c_int;
+        #[cfg(not(any(target_env = "musl", target_os = "android")))]
+        use libc::c_ulong as _c_int;
+
         let mut di = HCIDevInfo::default();
         di.dev_id = dev_id;
 
         unsafe {
-            handle_error(libc::ioctl(ctl, HCI_GET_DEV_MAGIC as libc::c_ulong,
+            handle_error(libc::ioctl(ctl, HCI_GET_DEV_MAGIC as _c_int,
                                      &mut di as (*mut HCIDevInfo) as (*mut libc::c_void)))?;
         }
 

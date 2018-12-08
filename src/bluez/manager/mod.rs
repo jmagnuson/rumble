@@ -58,6 +58,11 @@ impl Manager {
 
     /// Returns the list of adapters available on the system.
     pub fn adapters(&self) -> Result<Vec<Adapter>> {
+        #[cfg(any(target_env = "musl", target_os = "android"))]
+        use libc::c_int as _c_int;
+        #[cfg(not(any(target_env = "musl", target_os = "android")))]
+        use libc::c_ulong as _c_int;
+
         let mut result: Vec<Adapter> = vec![];
 
         let ctl = self.ctl_fd.lock().unwrap();
@@ -72,7 +77,7 @@ impl Manager {
             dr = (*dl).dev_reqs.as_mut_ptr();
 
             handle_error(
-                libc::ioctl(*ctl, HCI_GET_DEV_LIST_MAGIC as libc::c_ulong, dl as (*mut c_void)))?;
+                libc::ioctl(*ctl, HCI_GET_DEV_LIST_MAGIC as _c_int, dl as (*mut c_void)))?;
 
             for i in 0..(*dl).dev_num {
                 result.push(Adapter::from_dev_id(*ctl,
