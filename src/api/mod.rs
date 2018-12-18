@@ -176,7 +176,7 @@ pub struct PeripheralProperties {
 /// Peripheral is the device that you would like to communicate with (the "server" of BLE). This
 /// struct contains both the current state of the device (its properties, characteristics, etc.)
 /// as well as functions for communication.
-pub trait Peripheral: Send + Sync + Clone + Debug {
+pub trait Peripheral: Debug {
     /// Returns the address of the peripheral.
     fn address(&self) -> BDAddr;
 
@@ -273,7 +273,7 @@ pub enum CentralEvent {
 pub type EventHandler = Box<Fn(CentralEvent) + Send>;
 
 /// Central is the "client" of BLE. It's able to scan for and establish connections to peripherals.
-pub trait Central<P : Peripheral>: Send + Sync + Clone {
+pub trait Central<P : Peripheral>: Send + Sync + Clone + Sized {
     /// Registers a function that will receive notifications when events occur for this Central
     /// module. See [`Event`](enum.CentralEvent.html) for the full set of events. Note that the
     /// handler will be called in a common thread, so it should not block.
@@ -289,9 +289,81 @@ pub trait Central<P : Peripheral>: Send + Sync + Clone {
 
     /// Returns the list of [`Peripherals`](trait.Peripheral.html) that have been discovered so far.
     /// Note that this list may contain peripherals that are no longer available.
-    fn peripherals(&self) -> Vec<P>;
+    fn peripherals(&self) -> Vec<Box<P>>;
 
     /// Returns a particular [`Peripheral`](trait.Peripheral.html) by its address if it has been
     /// discovered.
     fn peripheral(&self, address: BDAddr) -> Option<P>;
+}
+
+impl <P: Peripheral> Peripheral for Box<P> {
+    fn address(&self) -> BDAddr {
+        (**self).address()
+    }
+
+    fn properties(&self) -> PeripheralProperties {
+        (**self).properties()
+    }
+
+    fn characteristics(&self) -> BTreeSet<Characteristic> {
+        (**self).characteristics()
+    }
+
+    fn is_connected(&self) -> bool {
+        (**self).is_connected()
+    }
+
+    fn connect(&self) -> Result<()> {
+        (**self).connect()
+    }
+
+    fn disconnect(&self) -> Result<()> {
+        (**self).disconnect()
+    }
+
+    fn discover_characteristics(&self) -> Result<Vec<Characteristic>> {
+        (**self).discover_characteristics()
+    }
+
+    fn discover_characteristics_in_range(&self, start: u16, end: u16) -> Result<Vec<Characteristic>> {
+        (**self).discover_characteristics_in_range(start, end)
+    }
+
+    fn command_async(&self, characteristic: &Characteristic, data: &[u8], handler: Option<CommandCallback>) {
+        (**self).command_async(characteristic, data, handler)
+    }
+
+    fn command(&self, characteristic: &Characteristic, data: &[u8]) -> Result<()> {
+        (**self).command(characteristic, data)
+    }
+
+    fn request_async(&self, characteristic: &Characteristic,
+                     data: &[u8], handler: Option<RequestCallback>) {
+        (**self).request_async(characteristic, data, handler)
+    }
+
+    fn request(&self, characteristic: &Characteristic, data: &[u8]) -> Result<Vec<u8>> {
+        (**self).request(characteristic, data)
+    }
+
+    fn read_by_type_async(&self, characteristic: &Characteristic,
+                          uuid: UUID, handler: Option<RequestCallback>) {
+        (**self).read_by_type_async(characteristic, uuid, handler)
+    }
+
+    fn read_by_type(&self, characteristic: &Characteristic, uuid: UUID) -> Result<Vec<u8>> {
+        (**self).read_by_type(characteristic, uuid)
+    }
+
+    fn subscribe(&self, characteristic: &Characteristic) -> Result<()> {
+        (**self).subscribe(characteristic)
+    }
+
+    fn unsubscribe(&self, characteristic: &Characteristic) -> Result<()> {
+        (**self).unsubscribe(characteristic)
+    }
+
+    fn on_notification(&self, handler: NotificationHandler) {
+        (**self).on_notification(handler)
+    }
 }

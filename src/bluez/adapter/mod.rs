@@ -409,9 +409,9 @@ impl Central<Peripheral> for ConnectedAdapter {
         self.set_scan_enabled(false)
     }
 
-    fn peripherals(&self) -> Vec<Peripheral> {
+    fn peripherals(&self) -> Vec<Box<Peripheral>> {
         let l = self.peripherals.lock().unwrap();
-        l.values().map(|p| p.clone()).collect()
+        l.values().map(|p| Box::new(p.clone())).collect()
     }
 
     fn peripheral(&self, address: BDAddr) -> Option<Peripheral> {
