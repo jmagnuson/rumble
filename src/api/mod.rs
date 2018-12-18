@@ -346,6 +346,14 @@ impl <P: Peripheral> Peripheral for Box<P> {
         (**self).request(characteristic, data)
     }
 
+    fn read_async(&self, characteristic: &Characteristic, handler: Option<RequestCallback>) {
+        (**self).read_async(characteristic, handler)
+    }
+
+    fn read(&self, characteristic: &Characteristic) -> Result<Vec<u8>> {
+        (**self).read(characteristic)
+    }
+
     fn read_by_type_async(&self, characteristic: &Characteristic,
                           uuid: UUID, handler: Option<RequestCallback>) {
         (**self).read_by_type_async(characteristic, uuid, handler)
